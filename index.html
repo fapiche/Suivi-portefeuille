@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal Elite Horizon — Portefeuille Tech & Semi</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js + adapter date-fns -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="header-logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-text">ELITE HORIZON</div>
+      <div class="logo-sub">Terminal Patrimonial</div>
+    </div>
+  </div>
+
+  <div class="header-portfolio">
+    <span id="header-total" style="font-family:var(--font-mono);font-size:1.4rem;font-weight:600">—</span>
+    <span id="header-gain" class="header-gain">—</span>
+  </div>
+
+  <div class="header-status">
+    <span class="status-dot sim" id="status-dot"></span>
+    <span id="status-text">INITIALISATION</span>
+    <span id="status-clock">—</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════════════════════ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="portfolio">📊 Analyse</button>
+  <button class="tab-btn" data-tab="macro">🌍 Radar Macro</button>
+  <button class="tab-btn" data-tab="predictions">🧠 Prédictions IA</button>
+  <button class="tab-btn" data-tab="audit">📋 Audit Stratégique</button>
+  <button class="tab-btn" data-tab="manage">⚙️ Gérer</button>
+  <button class="tab-btn" data-tab="gem">💎 Pépite x5</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB A — ANALYSE PORTEFEUILLE
+════════════════════════════════════════════════════════════ -->
+<div id="tab-portfolio" class="tab-content active">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Valeur Totale</div>
+      <div class="kpi-value" id="kpi-total-value">—</div>
+      <div class="kpi-sub" id="kpi-total-invested">Investi : —</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Plus-Value Latente</div>
+      <div class="kpi-value gain" id="kpi-total-gain">—</div>
+      <div class="kpi-sub" id="kpi-total-gain-pct">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Lignes Actives</div>
+      <div class="kpi-value" id="kpi-lines">14</div>
+      <div class="kpi-sub" id="kpi-cto-pea">CTO: 9  |  PEA: 5</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Dividendes Annuels</div>
+      <div class="kpi-value" id="kpi-dividends">—</div>
+      <div class="kpi-sub" id="kpi-dca">DCA 125 €/mois</div>
+    </div>
+  </div>
+
+  <!-- Graphique -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <span class="section-title" id="chart-title">Portefeuille Global</span>
+      <div class="chart-controls">
+        <div style="display:flex;gap:4px">
+          <button class="tf-btn active" data-tf="1D">1J</button>
+          <button class="tf-btn" data-tf="1W">1S</button>
+          <button class="tf-btn" data-tf="1M">1M</button>
+          <button class="tf-btn" data-tf="1Y">1A</button>
+          <button class="tf-btn" data-tf="5Y">5A</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-left:8px">
+          <button class="dsp-btn active" data-display="value">Valeur</button>
+          <button class="dsp-btn" data-display="gain">Gains</button>
+        </div>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="portfolio-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Table des actions -->
+  <div class="table-container">
+    <table class="stock-table">
+      <thead>
+        <tr>
+          <th>Cpte</th>
+          <th>Titre</th>
+          <th>PRU</th>
+          <th>Cours</th>
+          <th>Var. J</th>
+          <th>+/- Tot.</th>
+          <th>Valeur</th>
+          <th>Poids</th>
+        </tr>
+      </thead>
+      <tbody id="stock-table-body">
+        <!-- Rempli par app.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Fil d'actualités -->
+  <div class="news-section">
+    <div class="news-header" id="news-stock-title">Fil d'actualités — Sélectionnez une action</div>
+    <div class="news-list" id="news-list">
+      <p class="news-empty">Cliquez sur une action dans le tableau pour afficher ses dernières actualités.</p>
+    </div>
+  </div>
+
+</div><!-- /tab-portfolio -->
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB B — RADAR MACRO
+════════════════════════════════════════════════════════════ -->
+<div id="tab-macro" class="tab-content">
+
+  <div class="macro-toolbar">
+    <h2>🌍 Radar Macro-Économique</h2>
+    <button class="btn-refresh" id="macro-refresh-btn">
+      <span class="icon">↻</span> Rafraîchir
+    </button>
+  </div>
+  <div class="macro-grid" id="macro-news-container">
+    <!-- Rempli par app.js -->
+  </div>
+
+</div><!-- /tab-macro -->
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB C — PRÉDICTIONS IA
+════════════════════════════════════════════════════════════ -->
+<div id="tab-predictions" class="tab-content">
+
+  <div class="predictions-grid">
+
+    <!-- Graphique Monte Carlo -->
+    <div class="prediction-chart-box">
+      <div class="section-title" style="margin-bottom:16px">
+        Projection Monte Carlo — 12 mois · <span style="color:var(--text-muted);font-size:0.68rem;font-weight:400">600 simulations · DCA 125 €/mois inclus</span>
+      </div>
+      <div style="position:relative;height:360px">
+        <canvas id="prediction-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Scénarios + Infos -->
+    <div class="prediction-side">
+      <div class="scenario-card optimistic">
+        <div class="sc-label">▲ Scénario Optimiste (85e percentile)</div>
+        <div class="kpi-value gain" id="mc-optimistic">—</div>
+      </div>
+      <div class="scenario-card central">
+        <div class="sc-label">● Scénario Central (médiane)</div>
+        <div class="kpi-value" id="mc-central" style="color:var(--purple)">—</div>
+        <div class="kpi-sub" style="margin-top:6px">ROI estimé : <span id="mc-roi">—</span></div>
+      </div>
+      <div class="scenario-card pessimistic">
+        <div class="sc-label">▼ Scénario Pessimiste (15e percentile)</div>
+        <div class="kpi-value loss" id="mc-pessimistic">—</div>
+      </div>
+      <div class="scenario-card dividends">
+        <div class="sc-label" style="color:var(--yellow)">💰 Dividendes cumulés (12 mois)</div>
+        <div class="kpi-value" id="mc-dividends" style="color:var(--yellow)">—</div>
+      </div>
+      <div class="mc-info">
+        <strong>Méthode :</strong> Simulation Monte Carlo via Mouvement Brownien Géométrique (GBM) sur 600 trajectoires indépendantes.
+        Intègre la <strong>volatilité historique</strong> de chaque action, le <strong>DCA de 125 €/mois</strong> et les <strong>dividendes trimestriels</strong> estimés.
+        Le cône d'incertitude s'élargit avec le temps selon la volatilité du portefeuille.
+      </div>
+    </div>
+
+  </div>
+</div><!-- /tab-predictions -->
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB D — AUDIT STRATÉGIQUE
+════════════════════════════════════════════════════════════ -->
+<div id="tab-audit" class="tab-content">
+
+  <div class="audit-grid">
+
+    <!-- Graphiques -->
+    <div>
+      <div class="audit-charts">
+        <h3>Allocation Sectorielle</h3>
+        <div class="chart-canvas-alloc"><canvas id="allocation-chart"></canvas></div>
+      </div>
+    </div>
+    <div>
+      <div class="audit-charts">
+        <h3>Performance vs PRU par Action (%)</h3>
+        <div class="chart-canvas-fixed"><canvas id="performance-chart"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recommandations textuelles -->
+  <div class="audit-cards">
+
+    <div class="audit-card risk">
+      <div class="audit-badge">⚠️</div>
+      <div class="audit-tag">Axe 1 — Réduire le Risque</div>
+      <h3>Concentration Extrême sur les Semi-conducteurs</h3>
+      <p>
+        Votre portefeuille affiche une concentration de <strong>+90% sur le secteur semi-conducteurs & équipements</strong>,
+        dominé par NVIDIA qui représente à lui seul plus de <strong>78% de la valeur totale</strong>.
+        Ce niveau de concentration extrême vous expose à un risque sectoriel majeur : tout choc spécifique
+        (restrictions export, ralentissement datacenter, correction de valorisation des puces IA) pourrait
+        provoquer une perte de 40 à 60% sur la valeur globale du portefeuille.
+      </p>
+      <ul>
+        <li>Cible recommandée : réduire NVIDIA à 40% maximum du portefeuille par des ventes progressives</li>
+        <li>Réinvestir dans des secteurs décorrélés : Santé, Consommation défensive, Énergie</li>
+        <li>Considérer un ETF MSCI World PEA pour diversifier la base PEA (ex: Amundi CW8)</li>
+        <li>Objectif d'allocation : Semi &lt; 65% · Tech Services 10% · Autres secteurs 25%</li>
+      </ul>
+      <div class="audit-highlight">
+        💡 Sur-performance NVDA ≈ +5,300% — Des prises de profits partielles sont fiscalement justifiables via l'enveloppe CTO.
+      </div>
+    </div>
+
+    <div class="audit-card clean">
+      <div class="audit-badge">🧹</div>
+      <div class="audit-tag">Axe 2 — Assainir</div>
+      <h3>Chasse aux Micro-Lignes — Nettoyage du Portefeuille</h3>
+      <p>
+        Plusieurs lignes de votre portefeuille représentent une valeur inférieure à <strong>500 € et affichent des pertes latentes</strong>
+        (STMicroelectronics, Soitec). Ces micro-positions polluent la performance globale, génèrent des frais de courtage
+        disproportionnés, et mobilisent votre attention pour un impact négligeable.
+      </p>
+      <ul>
+        <li><strong>STM (428 €, –24.9%) :</strong> Secteur automobile en recul structurel. La thèse SiC est compromise à court terme. Arbitrage recommandé.</li>
+        <li><strong>SOI (432 €, –8.9%) :</strong> Ralentissement RF/mobile persistant. Redéploiement vers une ligne plus significative conseillé.</li>
+        <li>Règle de gestion : <em>toute ligne sous 1 000 € et en perte doit être arbitrée ou renforcée à 1 000 € minimum.</em></li>
+        <li>Libérer ~860 € qui, redirigés vers ASML ou MRVL, auraient un impact mesurable sur la performance.</li>
+      </ul>
+      <div class="audit-highlight">
+        ⚡ Les micro-lignes perdantes en CTO peuvent générer une moins-value fiscalement déductible des plus-values de la même année.
+      </div>
+    </div>
+
+    <div class="audit-card growth">
+      <div class="audit-badge">🚀</div>
+      <div class="audit-tag">Axe 3 — Objectif x5</div>
+      <h3>Créer une "Poche Venture" à Haut Potentiel</h3>
+      <p>
+        Pour espérer des rendements de <strong>+71% annualisés sur 3 ans</strong> (objectif x5 global),
+        l'ajout d'une poche "Venture" représentant 5 à 10% du portefeuille sur des valeurs
+        <strong>Small/Mid Cap à hyper-croissance</strong> est indispensable. Ces valeurs sont corrélées à
+        votre expertise sectorielle (Tech & Semi) mais avec un profil rendement/risque asymétrique.
+      </p>
+      <ul>
+        <li>Allouer 3 000 à 5 000 € sur 2 à 3 convictions Venture Tech éligibles PEA</li>
+        <li><strong>VusionGroup (VU.PA) :</strong> Intelligence artificielle pour le commerce physique. Voir onglet "Pépite x5".</li>
+        <li>Critères de sélection : croissance CA &gt;+40%/an, marché adressable &gt;$10 Mrd, éligible PEA</li>
+        <li>Horizon recommandé : 3 à 5 ans minimum. Sizing discipliné pour absorber la volatilité.</li>
+      </ul>
+      <div class="audit-highlight">
+        🎯 Un investissement de 3 000 € dans une conviction x5 représenterait ~5% du portefeuille actuel — assez significatif pour l'impact, assez limité pour contrôler le risque.
+      </div>
+    </div>
+
+  </div>
+</div><!-- /tab-audit -->
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB E — GÉRER (CRUD)
+════════════════════════════════════════════════════════════ -->
+<div id="tab-manage" class="tab-content">
+
+  <div class="manage-section-title">Gestion Active du Portefeuille</div>
+
+  <div class="manage-table-wrap">
+    <table class="manage-table">
+      <thead>
+        <tr>
+          <th>Cpte</th>
+          <th>Ticker</th>
+          <th>Quantité</th>
+          <th>PRU (€)</th>
+          <th>Cours act.</th>
+          <th>Valeur</th>
+          <th>+/- (€)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="manage-table-body">
+        <!-- Rempli par app.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Formulaire Ajout -->
+  <div class="add-form-card">
+    <h3>➕ Ajouter une Nouvelle Action</h3>
+    <form id="add-stock-form" autocomplete="off">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Ticker *</label>
+          <input type="text" name="ticker" placeholder="ex : PLTR" required maxlength="10">
+        </div>
+        <div class="form-field">
+          <label>Nom *</label>
+          <input type="text" name="sname" placeholder="ex : Palantir Technologies" required>
+        </div>
+        <div class="form-field">
+          <label>PRU (€) *</label>
+          <input type="number" name="pru" placeholder="0.00" step="0.01" min="0" required>
+        </div>
+        <div class="form-field">
+          <label>Quantité *</label>
+          <input type="number" name="qty" placeholder="1" step="1" min="1" required>
+        </div>
+        <div class="form-field">
+          <label>Compte</label>
+          <select name="account">
+            <option value="CTO">CTO</option>
+            <option value="PEA">PEA</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Secteur</label>
+          <input type="text" name="sector" placeholder="Semi-conducteurs">
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Ajouter au Portefeuille</button>
+    </form>
+  </div>
+
+</div><!-- /tab-manage -->
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB F — LA PÉPITE x5
+════════════════════════════════════════════════════════════ -->
+<div id="tab-gem" class="tab-content">
+
+  <!-- Hero -->
+  <div class="gem-hero">
+    <div class="gem-logo">💡</div>
+    <div class="gem-hero-content">
+      <h2>VusionGroup — VU.PA</h2>
+      <div class="gem-sub">Euronext Paris · Éligible PEA · Small Cap · IoT & IA Retail</div>
+      <p>
+        VusionGroup est le leader mondial des solutions d'intelligence artificielle pour le commerce physique.
+        Ses étiquettes électroniques (ESL) et sa plateforme cloud SaaS "VusionCloud" équipent déjà
+        <strong>plus de 400 enseignes</strong> dans 65 pays (Walmart, Carrefour, Aldi, Casino…).
+        La société est en train de basculer d'un modèle hardware vers un modèle <strong>SaaS récurrent à haute marge</strong>,
+        avec une croissance du CA de +50% en 2024.
+      </p>
+      <div class="gem-tag">💎 RECOMMANDATION COMITÉ — POCHE VENTURE x5</div>
+    </div>
+  </div>
+
+  <div class="gem-grid">
+
+    <!-- Métriques clés -->
+    <div class="gem-metrics">
+      <h3>Métriques Clés (FY2025E)</h3>
+      <div class="metric-row"><span class="metric-label">Ticker / Marché</span><span class="metric-val cyan">VU.PA — Euronext Paris</span></div>
+      <div class="metric-row"><span class="metric-label">Capitalisation boursière</span><span class="metric-val">~2.4 Mrd €</span></div>
+      <div class="metric-row"><span class="metric-label">Croissance CA (2024)</span><span class="metric-val green">+50% YoY</span></div>
+      <div class="metric-row"><span class="metric-label">CA 2026E</span><span class="metric-val green">~620 M€</span></div>
+      <div class="metric-row"><span class="metric-label">Marge brute (cible 2026)</span><span class="metric-val green">~55%</span></div>
+      <div class="metric-row"><span class="metric-label">EBITDA ajusté 2026E</span><span class="metric-val green">~145 M€</span></div>
+      <div class="metric-row"><span class="metric-label">Marché adressable (2028)</span><span class="metric-val">$20 Mrd+</span></div>
+      <div class="metric-row"><span class="metric-label">Clients actifs</span><span class="metric-val">400+ enseignes</span></div>
+      <div class="metric-row"><span class="metric-label">Pays déployés</span><span class="metric-val">65 pays</span></div>
+      <div class="metric-row"><span class="metric-label">Dividende</span><span class="metric-val">0 % (réinvestissement)</span></div>
+      <div class="metric-row"><span class="metric-label">Objectif cours (consensus)</span><span class="metric-val green">190 – 220 €</span></div>
+      <div class="metric-row"><span class="metric-label">Zone d'achat recommandée</span><span class="metric-val cyan">105 – 130 €</span></div>
+    </div>
+
+    <!-- Thèse d'investissement -->
+    <div class="gem-thesis">
+      <h3>Thèse d'Investissement</h3>
+      <div class="thesis-point">
+        <span class="thesis-icon">🏪</span>
+        <div class="thesis-text">
+          <strong>Commerce physique, marché colossal.</strong> Sur 1 milliard de points de vente physiques dans le monde,
+          moins de 2% sont équipés d'ESL connectées. Le taux de pénétration est en inflexion — VusionGroup est le seul
+          acteur à l'échelle mondiale avec une plateforme unifiée.
+        </div>
+      </div>
+      <div class="thesis-point">
+        <span class="thesis-icon">☁️</span>
+        <div class="thesis-text">
+          <strong>Pivot SaaS = réévaluation multiple.</strong> Passage du hardware récurrent vers VusionCloud (abonnements).
+          Les revenus logiciels & services représentent désormais 30% du mix et croissent à +80% par an.
+          Le marché réévaluera le titre avec un multiple SaaS (15-20x CA) au lieu d'un multiple industriel (3-5x CA).
+        </div>
+      </div>
+      <div class="thesis-point">
+        <span class="thesis-icon">🤖</span>
+        <div class="thesis-text">
+          <strong>IA embarquée = upsell continu.</strong> Les ESL deviennent des capteurs intelligents (analyse flux,
+          pricing dynamique, gestion inventaire IA). Chaque nouveau module représente une hausse de l'ARPU d'environ +25%.
+          Le contrat Walmart seul représente un potentiel de déploiement sur 5 000 magasins.
+        </div>
+      </div>
+      <div class="thesis-point">
+        <span class="thesis-icon">🛡️</span>
+        <div class="thesis-text">
+          <strong>Éligible PEA — Avantage fiscal.</strong> Action cotée sur Euronext Paris, éligible au PEA.
+          Les gains ne seront pas soumis à l'IR après 5 ans de détention (uniquement les prélèvements sociaux à 17.2%).
+          À fort potentiel de revalorisation, l'enveloppe fiscale devient décisive.
+        </div>
+      </div>
+      <div class="thesis-point">
+        <span class="thesis-icon">⚠️</span>
+        <div class="thesis-text">
+          <strong>Risques à surveiller.</strong> Dépendance à un petit nombre de grands comptes (Walmart = ~20% du CA).
+          Endettement net en croissance lié aux déploiements. Compétition de Pricer (suédois) et d'acteurs asiatiques
+          sur certains segments géographiques.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Graphique Revenus -->
+  <div class="gem-chart-box">
+    <h3>Historique & Prévisions — Chiffre d'Affaires & EBITDA (M€)</h3>
+    <div class="gem-chart-wrap"><canvas id="gem-chart"></canvas></div>
+  </div>
+
+  <div class="gem-disclaimer">
+    <strong>⚠ Avertissement :</strong> Cette analyse est fournie à titre informatif et ne constitue pas un conseil en investissement.
+    Tout investissement en actions comporte un risque de perte en capital. Les performances passées ne préjugent pas des performances futures.
+    VusionGroup est une valeur spéculative à fort potentiel et à risque élevé — ne pas investir au-delà de votre tolérance au risque.
+  </div>
+
+</div><!-- /tab-gem -->
+
+<!-- Scripts -->
+<script src="js/config.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
