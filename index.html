@@ -13,6 +13,87 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════
+     AUTH MODAL — Connexion / Inscription
+════════════════════════════════════════════════════════════ -->
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-box">
+
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⬡</div>
+      <div>
+        <div class="auth-logo-title">ELITE HORIZON</div>
+        <div class="auth-logo-sub">Terminal Patrimonial Institutionnel</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-auth-tab="login">Connexion</button>
+      <button class="auth-tab" data-auth-tab="register">Créer un compte</button>
+    </div>
+
+    <!-- Formulaire Connexion -->
+    <form id="auth-login-form" class="auth-form" novalidate>
+      <div class="auth-field">
+        <label>Identifiant</label>
+        <input type="text" name="username" placeholder="votre_identifiant"
+               autocomplete="username" required autofocus>
+      </div>
+      <div class="auth-field">
+        <label>Mot de passe</label>
+        <input type="password" name="password" placeholder="••••••••"
+               autocomplete="current-password" required>
+      </div>
+      <div class="auth-error" id="login-error"></div>
+      <button type="submit" class="auth-submit" id="login-submit-btn">
+        <span class="auth-submit-text">Accéder au Terminal</span>
+        <span class="auth-submit-loader" style="display:none">⟳</span>
+      </button>
+    </form>
+
+    <!-- Formulaire Inscription -->
+    <form id="auth-register-form" class="auth-form" style="display:none" novalidate>
+      <div class="auth-field">
+        <label>Identifiant *</label>
+        <input type="text" name="username" placeholder="votre_identifiant"
+               autocomplete="username" required>
+        <span class="auth-hint">3+ caractères · lettres minuscules, chiffres, _ et . uniquement</span>
+      </div>
+      <div class="auth-field">
+        <label>Adresse email *</label>
+        <input type="email" name="email" placeholder="email@exemple.com"
+               autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label>Mot de passe *</label>
+        <input type="password" name="password" placeholder="6 caractères minimum"
+               autocomplete="new-password" required>
+      </div>
+      <div class="auth-field">
+        <label>Confirmer le mot de passe *</label>
+        <input type="password" name="confirm" placeholder="Répétez le mot de passe"
+               autocomplete="new-password" required>
+      </div>
+      <div class="auth-error" id="register-error"></div>
+      <button type="submit" class="auth-submit" id="register-submit-btn">
+        <span class="auth-submit-text">Créer mon Compte</span>
+        <span class="auth-submit-loader" style="display:none">⟳</span>
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Vos données sont stockées localement dans votre navigateur.<br>
+      Aucune information n'est envoyée à un serveur externe.
+    </p>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL (masqué jusqu'à authentification)
+════════════════════════════════════════════════════════════ -->
+<div id="app-shell">
+
+<!-- ══════════════════════════════════════════════════════════
      HEADER
 ════════════════════════════════════════════════════════════ -->
 <header class="app-header">
@@ -33,6 +114,12 @@
     <span class="status-dot sim" id="status-dot"></span>
     <span id="status-text">INITIALISATION</span>
     <span id="status-clock">—</span>
+  </div>
+
+  <div class="header-user" id="header-user" style="display:none">
+    <div class="user-avatar-badge" id="user-avatar-initials">--</div>
+    <span class="user-name" id="header-username">—</span>
+    <button class="btn-logout" id="logout-btn">Déconnexion</button>
   </div>
 </header>
 
@@ -454,8 +541,11 @@
 
 </div><!-- /tab-gem -->
 
+</div><!-- /app-shell -->
+
 <!-- Scripts -->
 <script src="js/config.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/app.js"></script>
 

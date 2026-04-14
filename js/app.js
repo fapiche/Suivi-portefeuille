@@ -44,6 +44,13 @@ function getStockCost(stock)     { return stock.qty * stock.pru; }
 function getStockGain(stock)     { return getStockValue(stock) - getStockCost(stock); }
 function getStockGainPct(stock)  { return ((CURRENT_PRICES[stock.ticker] - stock.pru) / stock.pru) * 100; }
 
+// ── Persistance portefeuille ──────────────────────────────────
+
+function saveCurrentPortfolio() {
+  const session = AuthManager.getSession();
+  if (session) AuthManager.savePortfolio(session.userId, PORTFOLIO);
+}
+
 // ── Formatage ────────────────────────────────────────────────
 
 const fmt = {
@@ -703,6 +710,7 @@ function saveEditRow(id) {
   AppState.editingRow = null;
   // Invalider le cache Monte Carlo
   AppState.mcData = null;
+  saveCurrentPortfolio();
   renderManageTab();
   if (AppState.activeTab === 'portfolio') renderPortfolioTab();
   showToast('Ligne ' + stock.ticker + ' mise à jour.');
@@ -719,6 +727,7 @@ function deleteStock(id) {
   if (!confirm(`Supprimer définitivement la ligne ${stock.ticker} (${stock.name}) ?`)) return;
   PORTFOLIO = PORTFOLIO.filter(s => s.id !== id);
   AppState.mcData = null;
+  saveCurrentPortfolio();
   renderManageTab();
   if (AppState.activeTab === 'portfolio') renderPortfolioTab();
   showToast('Ligne ' + stock.ticker + ' supprimée.');
@@ -758,6 +767,7 @@ function handleAddStockForm(e) {
   PRICE_HISTORY[ticker]  = [{ time: Date.now(), price: pru }];
 
   AppState.mcData = null;
+  saveCurrentPortfolio();
   f.reset();
   renderManageTab();
   showToast('Action ' + ticker + ' ajoutée avec succès !');
@@ -902,6 +912,149 @@ function showToast(msg, type = 'success') {
 }
 
 // ============================================================
+// AUTHENTIFICATION — UI
+// ============================================================
+
+function showAuthModal() {
+  const overlay = document.getElementById('auth-overlay');
+  if (overlay) overlay.classList.add('open');
+  // Masquer l'app principale tant qu'on n'est pas connecté
+  document.getElementById('app-shell')?.style.setProperty('display', 'none');
+}
+
+function hideAuthModal() {
+  const overlay = document.getElementById('auth-overlay');
+  if (overlay) overlay.classList.remove('open');
+  document.getElementById('app-shell')?.style.removeProperty('display');
+}
+
+function setUserDisplay(session) {
+  const userEl     = document.getElementById('header-user');
+  const nameEl     = document.getElementById('header-username');
+  const avatarEl   = document.getElementById('user-avatar-initials');
+  if (userEl)   userEl.style.display  = 'flex';
+  if (nameEl)   nameEl.textContent    = session.username;
+  if (avatarEl) avatarEl.textContent  = session.username.slice(0, 2).toUpperCase();
+}
+
+function initAuthForms() {
+  // ── Bascule Login / Register ─────────────────────────────
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.authTab;
+      document.getElementById('auth-login-form').style.display    = which === 'login'    ? 'flex' : 'none';
+      document.getElementById('auth-register-form').style.display = which === 'register' ? 'flex' : 'none';
+      // Vider les erreurs
+      ['login-error','register-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.classList.remove('visible'); }
+      });
+    });
+  });
+
+  // ── Formulaire Connexion ─────────────────────────────────
+  document.getElementById('auth-login-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const f        = e.target;
+    const errEl    = document.getElementById('login-error');
+    const submitEl = document.getElementById('login-submit-btn');
+    setAuthError('login-error', '');
+    submitEl.disabled = true;
+    submitEl.querySelector('.auth-submit-text').style.display  = 'none';
+    submitEl.querySelector('.auth-submit-loader').style.display = 'inline';
+    try {
+      const session = await AuthManager.login(f.username.value, f.password.value);
+      await startApp(session);
+    } catch (err) {
+      setAuthError('login-error', err.message);
+    } finally {
+      submitEl.disabled = false;
+      submitEl.querySelector('.auth-submit-text').style.display  = 'inline';
+      submitEl.querySelector('.auth-submit-loader').style.display = 'none';
+    }
+  });
+
+  // ── Formulaire Inscription ───────────────────────────────
+  document.getElementById('auth-register-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const f        = e.target;
+    const submitEl = document.getElementById('register-submit-btn');
+    setAuthError('register-error', '');
+    submitEl.disabled = true;
+    submitEl.querySelector('.auth-submit-text').style.display  = 'none';
+    submitEl.querySelector('.auth-submit-loader').style.display = 'inline';
+    try {
+      const session = await AuthManager.register(
+        f.username.value, f.email.value, f.password.value, f.confirm.value
+      );
+      await startApp(session);
+    } catch (err) {
+      setAuthError('register-error', err.message);
+    } finally {
+      submitEl.disabled = false;
+      submitEl.querySelector('.auth-submit-text').style.display  = 'inline';
+      submitEl.querySelector('.auth-submit-loader').style.display = 'none';
+    }
+  });
+}
+
+function setAuthError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('visible', !!msg);
+}
+
+// ── Démarrage de l'app après authentification ────────────────
+
+async function startApp(session) {
+  // Charger le portefeuille de l'utilisateur (ou cloner le défaut)
+  const saved = AuthManager.loadPortfolio(session.userId);
+  if (saved && saved.length > 0) {
+    PORTFOLIO = saved;
+  } else {
+    PORTFOLIO = JSON.parse(JSON.stringify(DEFAULT_PORTFOLIO));
+    AuthManager.savePortfolio(session.userId, PORTFOLIO);
+  }
+
+  // S'assurer que les prix courants existent pour toutes les lignes
+  PORTFOLIO.forEach(s => {
+    if (!CURRENT_PRICES[s.ticker]) {
+      CURRENT_PRICES[s.ticker] = s.pru;
+      DAILY_OPENS[s.ticker]    = s.pru;
+      PRICE_HISTORY[s.ticker]  = [{ time: Date.now(), price: s.pru }];
+    }
+  });
+
+  setUserDisplay(session);
+  hideAuthModal();
+  init();
+}
+
+// ── Déconnexion ──────────────────────────────────────────────
+
+function handleLogout() {
+  if (!confirm('Se déconnecter du terminal ?')) return;
+  PriceEngine.stop();
+  AuthManager.logout();
+  PORTFOLIO = [];
+  // Réinitialiser l'état de l'app
+  if (AppState.portfolioChart)  { AppState.portfolioChart.destroy();  AppState.portfolioChart  = null; }
+  if (AppState.predictionChart) { AppState.predictionChart.destroy(); AppState.predictionChart = null; }
+  if (AppState.auditChart)      { AppState.auditChart.destroy();      AppState.auditChart      = null; }
+  if (AppState.allocationChart) { AppState.allocationChart.destroy(); AppState.allocationChart = null; }
+  AppState.mcData        = null;
+  AppState.selectedTicker = null;
+  // Masquer infos utilisateur
+  const userEl = document.getElementById('header-user');
+  if (userEl) userEl.style.display = 'none';
+  showToast('Déconnexion effectuée.', 'success');
+  setTimeout(() => showAuthModal(), 400);
+}
+
+// ============================================================
 // INITIALISATION
 // ============================================================
 
@@ -945,6 +1098,9 @@ function init() {
   const addForm = document.getElementById('add-stock-form');
   if (addForm) addForm.addEventListener('submit', handleAddStockForm);
 
+  // ── Bouton Déconnexion ───────────────────────────────────
+  document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+
   // ── Moteur de cotation ───────────────────────────────────
   PriceEngine.onTick(onTick);
   PriceEngine.start();
@@ -959,4 +1115,14 @@ function init() {
   }, 1000);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// ── Point d'entrée principal ─────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', async () => {
+  initAuthForms();
+  const session = AuthManager.getSession();
+  if (session) {
+    await startApp(session);
+  } else {
+    showAuthModal();
+  }
+});

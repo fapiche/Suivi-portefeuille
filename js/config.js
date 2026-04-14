@@ -15,9 +15,11 @@ const CONFIG = {
 
 // ============================================================
 // PORTEFEUILLE – 14 LIGNES ACTIVES (CTO + PEA)
+// DEFAULT_PORTFOLIO = template de référence (cloné pour chaque nouvel utilisateur)
+// PORTFOLIO         = variable de travail, peuplée après authentification
 // ============================================================
 
-let PORTFOLIO = [
+const DEFAULT_PORTFOLIO = [
   // ── CTO ──────────────────────────────────────────────────
   {
     id: 1, ticker: 'NVDA',  name: 'NVIDIA Corporation',
@@ -133,6 +135,9 @@ let PORTFOLIO = [
     description: 'Matériaux semi-conducteurs SOI. Pression sur RF/mobile, traction PowerSOI automotive/IoT.',
   },
 ];
+
+// Variable de travail — peuplée après auth depuis localStorage (ou clonée depuis DEFAULT_PORTFOLIO)
+let PORTFOLIO = [];
 
 // ============================================================
 // PRIX DE BASE — Simulation Avril 2026 (€)
