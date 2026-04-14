@@ -2,164 +2,156 @@
 
 // ============================================================
 // TERMINAL ELITE HORIZON — Gestionnaire d'Authentification
-// Stockage : localStorage (côté client, par navigateur)
-// Sécurité : hash SHA-256 des mots de passe via Web Crypto API
+//
+// Toutes les opérations passent par le backend REST (/api/).
+// Les tokens JWT sont stockés dans localStorage (pas de cookie
+// pour rester compatible avec tout hébergement statique+API).
+//
+// Sécurité :
+//   - Hash bcrypt (coût 12) côté SERVEUR (server/routes/auth.js)
+//   - JWT signé HS256, expiration 30 jours
+//   - Ce fichier ne contient aucune logique cryptographique sensible
 // ============================================================
 
 const AuthManager = (function () {
 
-  const KEY_USERS   = 'eh_v1_users';
-  const KEY_SESSION = 'eh_v1_session';
-  const SESSION_TTL = 30 * 24 * 3600e3; // 30 jours
+  const TOKEN_KEY = 'eh_jwt';
+  const USER_KEY  = 'eh_user';
+  const API       = '/api';
 
-  // ── Crypto ────────────────────────────────────────────────
+  // ── Helpers HTTP ──────────────────────────────────────────
 
-  async function _hash(str) {
-    const buf = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(str)
-    );
-    return [...new Uint8Array(buf)]
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+  async function _fetch(method, path, body, token) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res  = await fetch(API + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Erreur HTTP ${res.status}`);
+    return data;
   }
 
-  // ── Stockage Utilisateurs ─────────────────────────────────
+  function _getToken()  { return localStorage.getItem(TOKEN_KEY); }
 
-  function _getUsers() {
-    try { return JSON.parse(localStorage.getItem(KEY_USERS) || '{}'); }
-    catch { return {}; }
-  }
-
-  function _saveUsers(users) {
-    localStorage.setItem(KEY_USERS, JSON.stringify(users));
-  }
-
-  // ── Session ───────────────────────────────────────────────
+  // ── Session (lecture locale du payload JWT) ───────────────
 
   function getSession() {
+    const token = _getToken();
+    if (!token) return null;
     try {
-      const s = JSON.parse(localStorage.getItem(KEY_SESSION));
-      if (!s) return null;
-      if (Date.now() > s.exp) {
-        localStorage.removeItem(KEY_SESSION);
+      // Décoder le payload sans vérifier la signature (validation = serveur)
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (Date.now() >= payload.exp * 1000) {
+        _clearSession();
         return null;
       }
-      return s;
-    } catch { return null; }
+      return JSON.parse(localStorage.getItem(USER_KEY));
+    } catch {
+      _clearSession();
+      return null;
+    }
   }
 
-  function _createSession(user) {
-    const session = {
+  function _saveSession(token, user) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify({
       userId:   user.id,
       username: user.username,
       email:    user.email,
-      exp:      Date.now() + SESSION_TTL,
-    };
-    localStorage.setItem(KEY_SESSION, JSON.stringify(session));
-    return session;
+    }));
   }
 
-  function logout() {
-    localStorage.removeItem(KEY_SESSION);
+  function _clearSession() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 
-  // ── Portfolio par Utilisateur ─────────────────────────────
+  function logout() { _clearSession(); }
 
-  function loadPortfolio(userId) {
+  // ── Portfolio ─────────────────────────────────────────────
+
+  async function loadPortfolio(_userId) {
+    // _userId ignoré — le serveur l'extrait du token JWT
     try {
-      const raw = localStorage.getItem(`eh_portfolio_${userId}`);
-      if (!raw) return null;
-      const saved = JSON.parse(raw);
-      // Fusionner avec les données template (volatility, drift, color…)
-      // pour les actions présentes dans DEFAULT_PORTFOLIO
-      return saved.map(s => {
-        const tpl = DEFAULT_PORTFOLIO.find(t => t.ticker === s.ticker);
+      const { portfolio } = await _fetch('GET', '/portfolio', null, _getToken());
+      if (!portfolio) return null;
+      // Fusionner les données sauvegardées avec le template (volatility, drift, color…)
+      return portfolio.map(s => {
+        const tpl = (typeof DEFAULT_PORTFOLIO !== 'undefined')
+          ? DEFAULT_PORTFOLIO.find(t => t.ticker === s.ticker)
+          : null;
         return tpl ? { ...tpl, ...s } : s;
       });
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
-  function savePortfolio(userId, portfolio) {
-    // Ne stocker que les champs propres à l'utilisateur (financiers + identifiants)
-    // Les champs moteur (volatility, drift, color…) sont rechargés depuis le template
-    const slim = portfolio.map(s => ({
-      id:          s.id,
-      ticker:      s.ticker,
-      name:        s.name,
-      pru:         s.pru,
-      qty:         s.qty,
-      account:     s.account,
-      sector:      s.sector,
-      country:     s.country,
-      currency:    s.currency,
+  async function savePortfolio(_userId, portfolio) {
+    // Sérialiser uniquement les champs utiles (éviter de stocker les données moteur redondantes)
+    const slim = (portfolio ?? []).map(s => ({
+      id:           s.id,
+      ticker:       s.ticker,
+      name:         s.name,
+      pru:          s.pru,
+      qty:          s.qty,
+      account:      s.account,
+      sector:       s.sector,
+      country:      s.country,
+      currency:     s.currency,
       dividendYield: s.dividendYield,
-      // Conserver les champs moteur pour les actions non-template (ajoutées par l'utilisateur)
-      volatility:  s.volatility,
-      drift:       s.drift,
-      color:       s.color,
-      description: s.description,
+      // Conserver les champs moteur pour les actions ajoutées par l'utilisateur (hors template)
+      volatility:   s.volatility,
+      drift:        s.drift,
+      color:        s.color,
+      description:  s.description,
     }));
-    localStorage.setItem(`eh_portfolio_${userId}`, JSON.stringify(slim));
+    try {
+      await _fetch('PUT', '/portfolio', { portfolio: slim }, _getToken());
+    } catch (err) {
+      console.warn('[AuthManager] savePortfolio failed (will retry):', err.message);
+    }
   }
 
   // ── Inscription ────────────────────────────────────────────
 
   async function register(username, email, password, confirm) {
-    const users = _getUsers();
+    // Validation rapide côté client (feedback immédiat)
+    const u = String(username ?? '').trim().toLowerCase();
+    const e = String(email    ?? '').trim().toLowerCase();
 
-    // Validation
-    username = username.trim().toLowerCase();
-    email    = email.trim().toLowerCase();
-
-    if (username.length < 3)
+    if (u.length < 3)
       throw new Error('Identifiant : 3 caractères minimum.');
-    if (!/^[a-z0-9_.]+$/.test(username))
+    if (!/^[a-z0-9_.]+$/.test(u))
       throw new Error('Identifiant : lettres minuscules, chiffres, _ et . uniquement.');
-    if (!email.includes('@') || !email.includes('.'))
+    if (!e.includes('@') || !e.includes('.'))
       throw new Error('Adresse email invalide.');
-    if (password.length < 6)
+    if (String(password ?? '').length < 6)
       throw new Error('Mot de passe : 6 caractères minimum.');
     if (password !== confirm)
       throw new Error('Les mots de passe ne correspondent pas.');
-    if (users[username])
-      throw new Error('Cet identifiant est déjà utilisé.');
-    if (Object.values(users).some(u => u.email === email))
-      throw new Error('Cette adresse email est déjà enregistrée.');
 
-    const id   = (crypto.randomUUID?.() ??
-      Date.now().toString(36) + Math.random().toString(36).slice(2));
-    const user = {
-      id,
-      username,
-      email,
-      passwordHash: await _hash(password),
-      createdAt:    Date.now(),
-    };
-
-    users[username] = user;
-    _saveUsers(users);
-
-    // Créer le portefeuille par défaut pour ce nouvel utilisateur
-    savePortfolio(id, JSON.parse(JSON.stringify(DEFAULT_PORTFOLIO)));
-
-    return _createSession(user);
+    const { token, user } = await _fetch('POST', '/auth/register', {
+      username: u, email: e, password, confirm,
+    });
+    _saveSession(token, user);
+    return { userId: user.id, username: user.username, email: user.email };
   }
 
   // ── Connexion ─────────────────────────────────────────────
 
   async function login(username, password) {
-    const users = _getUsers();
-    username    = username.trim().toLowerCase();
-
-    const user  = users[username];
-    if (!user)
-      throw new Error('Identifiant ou mot de passe incorrect.');
-
-    if (await _hash(password) !== user.passwordHash)
-      throw new Error('Identifiant ou mot de passe incorrect.');
-
-    return _createSession(user);
+    const { token, user } = await _fetch('POST', '/auth/login', {
+      username: String(username ?? '').trim().toLowerCase(),
+      password: String(password ?? ''),
+    });
+    _saveSession(token, user);
+    return { userId: user.id, username: user.username, email: user.email };
   }
 
   // ── API publique ──────────────────────────────────────────

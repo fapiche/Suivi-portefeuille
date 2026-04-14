@@ -48,7 +48,8 @@ function getStockGainPct(stock)  { return ((CURRENT_PRICES[stock.ticker] - stock
 
 function saveCurrentPortfolio() {
   const session = AuthManager.getSession();
-  if (session) AuthManager.savePortfolio(session.userId, PORTFOLIO);
+  // savePortfolio est async — on laisse tourner en tâche de fond
+  if (session) AuthManager.savePortfolio(session.userId, PORTFOLIO).catch(console.warn);
 }
 
 // ── Formatage ────────────────────────────────────────────────
@@ -1010,8 +1011,8 @@ function setAuthError(id, msg) {
 // ── Démarrage de l'app après authentification ────────────────
 
 async function startApp(session) {
-  // Charger le portefeuille de l'utilisateur (ou cloner le défaut)
-  const saved = AuthManager.loadPortfolio(session.userId);
+  // Charger le portefeuille depuis l'API (ou cloner le défaut pour un nouvel utilisateur)
+  const saved = await AuthManager.loadPortfolio(session.userId);
   if (saved && saved.length > 0) {
     PORTFOLIO = saved;
   } else {
