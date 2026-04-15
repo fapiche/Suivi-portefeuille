@@ -1182,3 +1182,200 @@ input, select { font-family: var(--font-ui); }
   height:     1px;
   background: var(--border);
 }
+
+/* ── PWA Install Banner ─────────────────────────────────────── */
+.install-banner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  padding:         10px 20px;
+  background:      linear-gradient(90deg, rgba(0,212,255,0.12), rgba(167,139,250,0.12));
+  border-bottom:   1px solid rgba(0,212,255,0.25);
+  font-size:       0.82rem;
+  color:           var(--text-primary);
+  z-index:         200;
+  position:        relative;
+}
+.install-banner-content {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  flex:        1;
+}
+.install-icon {
+  border-radius: var(--radius-sm);
+  flex-shrink:   0;
+}
+.install-text {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+.install-text strong { color: var(--cyan); }
+.install-text span   { font-size: 0.75rem; color: var(--text-secondary); }
+.install-actions {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-shrink: 0;
+}
+.btn-install-accept {
+  padding:       7px 16px;
+  font-size:     0.78rem;
+  font-weight:   700;
+  color:         var(--bg-root);
+  background:    linear-gradient(135deg, var(--cyan), var(--purple));
+  border:        none;
+  border-radius: var(--radius-sm);
+  white-space:   nowrap;
+  transition:    opacity 0.2s;
+}
+.btn-install-accept:hover { opacity: 0.88; }
+.btn-install-dismiss {
+  padding:       6px 10px;
+  font-size:     0.82rem;
+  color:         var(--text-muted);
+  background:    transparent;
+  border:        1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition:    color 0.15s, border-color 0.15s;
+  white-space:   nowrap;
+}
+.btn-install-dismiss:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+
+/* ── Tab Icon/Label split ───────────────────────────────────── */
+.tab-icon  { display: inline; margin-right: 6px; }
+.tab-label { display: inline; }
+
+/* ── PWA / Mobile Responsive ───────────────────────────────── */
+
+/* Safe-area padding for header (notch devices) */
+.app-header {
+  padding-top: max(14px, calc(14px + env(safe-area-inset-top)));
+}
+
+/* Bottom navigation on mobile */
+@media (max-width: 768px) {
+  /* Touch targets */
+  button, input, select, .tab-btn { min-height: 44px; }
+
+  /* Prevent iOS auto-zoom on inputs */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Header: compact */
+  .app-header {
+    padding:  max(10px, calc(10px + env(safe-area-inset-top))) 14px 10px;
+    gap:      10px;
+    flex-wrap: wrap;
+  }
+  .header-logo .logo-text { display: none; }
+  .header-portfolio {
+    flex:  none;
+    width: 100%;
+    justify-content: flex-start;
+    order: 3;
+  }
+  .status-indicator { display: none; }
+
+  /* Hide top tab-nav, show bottom nav */
+  .tab-nav {
+    position:   fixed;
+    bottom:     0;
+    left:       0;
+    right:      0;
+    top:        unset;
+    z-index:    500;
+    display:    grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap:        0;
+    padding:    0 0 env(safe-area-inset-bottom);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    overflow:   visible;
+    height:     calc(56px + env(safe-area-inset-bottom));
+  }
+
+  .tab-btn {
+    display:        flex;
+    flex-direction: column;
+    align-items:    center;
+    justify-content: center;
+    padding:        6px 4px;
+    font-size:      0.62rem;
+    gap:            2px;
+    border-bottom:  none;
+    border-top:     2px solid transparent;
+    border-left:    none;
+    border-right:   none;
+    border-radius:  0;
+    min-height:     unset;
+    height:         100%;
+    white-space:    normal;
+    text-align:     center;
+    line-height:    1.2;
+  }
+  .tab-btn.active {
+    border-top-color:  var(--cyan);
+    border-bottom:     none;
+    border-left:       none;
+    border-right:      none;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.04); }
+
+  /* Show icon larger, label tiny */
+  .tab-icon  { margin-right: 0; font-size: 1.3rem; display: block; }
+  .tab-label { display: block; font-size: 0.55rem; letter-spacing: 0.02em; }
+
+  /* Main content: pad bottom to clear fixed nav */
+  .tab-content {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* Toast: above bottom nav */
+  .toast {
+    bottom: calc(72px + env(safe-area-inset-bottom) + 8px);
+    right:  14px;
+    left:   14px;
+    text-align: center;
+  }
+
+  /* Install banner: compact on mobile */
+  .install-banner {
+    flex-wrap: wrap;
+    padding:   10px 14px;
+    gap:       8px;
+  }
+  .install-banner-content { flex: 1 1 200px; }
+  .install-actions        { flex: 0 0 auto; }
+
+  /* Auth modal: sheet from bottom on mobile */
+  .auth-overlay { align-items: flex-end; }
+  .auth-box {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    width:         100%;
+    max-width:     100%;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    max-height:    95vh;
+    overflow-y:    auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-nav { grid-template-columns: repeat(6, 1fr); }
+  .tab-label { display: none; } /* icon only on very small screens */
+  .tab-btn   { padding: 8px 2px; }
+  .tab-icon  { font-size: 1.4rem; }
+
+  /* Stack KPI single column */
+  .kpi-row { grid-template-columns: 1fr; }
+
+  /* Narrower form grids */
+  .form-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Install banner: stack on tiny screens */
+  .install-banner         { flex-direction: column; align-items: flex-start; }
+  .install-banner-content { flex: 1 1 auto; }
+  .install-actions        { align-self: flex-end; }
+}
