@@ -1,0 +1,41 @@
+{
+  "name": "Terminal Elite Horizon",
+  "short_name": "Elite Horizon",
+  "description": "Terminal de pilotage patrimonial institutionnel — Tech & Semi-conducteurs",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0a0e1a",
+  "background_color": "#0a0e1a",
+  "lang": "fr",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Analyse Portefeuille",
+      "short_name": "Analyse",
+      "url": "/?tab=portfolio",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Gérer mes Actions",
+      "short_name": "Gérer",
+      "url": "/?tab=manage",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ]
+}

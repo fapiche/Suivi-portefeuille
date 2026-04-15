@@ -1,0 +1,15 @@
+# Environnement — NE JAMAIS COMMITTER
+.env
+.env.*
+
+# Node.js (dépendances serveur optionnelles)
+node_modules/
+npm-debug.log*
+
+# Données locales
+data/
+
+# Éditeurs
+.DS_Store
+.vscode/
+*.swp

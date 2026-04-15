@@ -1,0 +1,11 @@
+{
+  "name": "suivi-portefeuille",
+  "version": "3.0.0",
+  "description": "Terminal Elite Horizon — PWA autonome, aucune dépendance externe requise",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev":   "node --watch server.js"
+  },
+  "dependencies": {}
+}
