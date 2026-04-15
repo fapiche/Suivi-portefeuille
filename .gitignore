@@ -1,7 +1,8 @@
 # Environnement — NE JAMAIS COMMITTER
 .env
+.env.*
 
-# Node.js
+# Node.js (dépendances serveur optionnelles)
 node_modules/
 npm-debug.log*
 

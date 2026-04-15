@@ -6,7 +6,7 @@
 //             Network-only pour l'API (/api/*)
 // ============================================================
 
-const CACHE  = 'elite-horizon-v2';
+const CACHE  = 'elite-horizon-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -17,9 +17,9 @@ const ASSETS = [
   '/js/auth.js',
   '/js/engine.js',
   '/js/app.js',
-  // CDN — Chart.js + date adapter
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
-  'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js',
+  // Bibliothèques bundlées localement (aucune dépendance externe)
+  '/vendor/chart.umd.min.js',
+  '/vendor/chartjs-adapter-date-fns.bundle.min.js',
 ];
 
 // ── Install : pré-cache des assets ───────────────────────────
